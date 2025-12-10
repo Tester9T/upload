@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ADFuels | Ultra-Modern 3D Experience</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            green: '#00fa5e', // Hyper Neon Green
+                            dark: '#050505',
+                            accent: '#111111',
+                            glass: 'rgba(255, 255, 255, 0.05)'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Orbitron', 'sans-serif'], // Sci-fi font
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Orbitron:wght@400;700;900&display=swap');
+
+        :root {
+            --perspective: 1000px;
+            --primary-glow: 0px 0px 40px rgba(0, 250, 94, 0.15);
+        }
+
+        body {
+            background-color: #050505;
+            color: white;
+            overflow-x: hidden;
+            perspective: var(--perspective);
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* 3D SCENE BACKGROUND (MOVING GRID) */
+        .world-grid {
+            position: fixed;
+            top: 0; left: 0; width: 200vw; height: 200vh;
+            background-image: 
+                linear-gradient(rgba(0, 250, 94, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 250, 94, 0.1) 1px, transparent 1px);
+            background-size: 50px 50px;
+            transform: perspective(500px) rotateX(60deg) translateY(-100px) translateZ(-200px);
+            transform-origin: center top;
+            animation: gridMove 20s linear infinite;
+            z-index: -20;
+            opacity: 0.3;
+            mask-image: linear-gradient(to bottom, transparent 0%, black 40%, transparent 100%);
+        }
+
+        @keyframes gridMove {
+            0% { transform: perspective(500px) rotateX(60deg) translateY(0) translateZ(-200px); }
+            100% { transform: perspective(500px) rotateX(60deg) translateY(50px) translateZ(-200px); }
+        }
+
+        /* 3D FLOATING CARD STYLES */
+        .card-3d {
+            transform-style: preserve-3d;
+            transition: transform 0.1s ease-out, box-shadow 0.3s ease;
+            background: rgba(20, 20, 20, 0.6);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
+        
+        /* The "Thickness" of the card */
+        .card-3d::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            border-radius: inherit;
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.05);
+            transform: translateZ(-20px);
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        .card-3d:hover {
+            border-color: #00fa5e;
+            box-shadow: 0 0 30px rgba(0, 250, 94, 0.2), inset 0 0 20px rgba(0, 250, 94, 0.05);
+        }
+
+        /* 3D Text Layers */
+        .layer-deep { transform: translateZ(-50px) scale(0.9); opacity: 0.7; }
+        .layer-mid { transform: translateZ(0px); }
+        .layer-pop { transform: translateZ(40px); text-shadow: 0 10px 20px rgba(0,0,0,0.5); }
+
+        /* Floating Nav Dock */
+        .nav-dock {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 10px 30px;
+            border-radius: 50px;
+            z-index: 100;
+            display: flex;
+            gap: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+        }
+
+        .nav-item {
+            position: relative;
+            color: #888;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s;
+        }
+        .nav-item:hover { color: #00fa5e; transform: translateY(-3px); }
+        .nav-item::after {
+            content: ''; position: absolute; bottom: -5px; left: 50%; width: 0%; height: 2px;
+            background: #00fa5e; transform: translateX(-50%); transition: width 0.3s;
+        }
+        .nav-item:hover::after { width: 100%; }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #000; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #00fa5e; }
+
+        /* Utility for 3D Text */
+        .hologram-text {
+            font-family: 'Orbitron', sans-serif;
+            background: linear-gradient(to bottom, #ffffff, #aaaaaa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="world-grid"></div>
+
+    <nav class="nav-dock">
+        <a href="#home" class="nav-item">Home</a>
+        <a href="#about" class="nav-item">About</a>
+        <a href="#stores" class="nav-item">Network</a>
+        <a href="#services" class="nav-item">Services</a>
+    </nav>
+
+    <div class="fixed top-6 right-6 z-50">
+        <div class="text-right mb-2 text-xs text-gray-500 font-mono">SYS.STATUS: ONLINE</div>
+        <button id="theme-toggle" class="w-12 h-12 rounded-full border border-gray-700 bg-black/50 text-white hover:border-brand-green hover:text-brand-green hover:shadow-[0_0_20px_rgba(0,250,94,0.4)] transition-all flex items-center justify-center">
+            <i class="fas fa-adjust"></i>
+        </button>
+    </div>
+
+    <main class="relative z-10 pb-40">
+
+        <section id="home" class="min-h-screen flex items-center justify-center perspective-container overflow-hidden">
+            <div id="hero-tilt" class="relative transform-style-3d text-center p-20 cursor-default">
+                
+                <div class="absolute top-0 left-0 w-full h-full border border-brand-green/20 rounded-3xl layer-deep"></div>
+                <div class="absolute -top-10 -right-10 w-40 h-40 bg-brand-green blur-[80px] opacity-20 layer-mid"></div>
+
+                <div class="layer-pop">
+                    <div class="inline-block px-4 py-1 border border-brand-green/30 rounded-full text-brand-green text-xs tracking-[0.3em] mb-6 font-mono bg-black/40 backdrop-blur-md">
+                        EST. 2009 • IRELAND
+                    </div>
+                    <h1 class="text-6xl md:text-9xl font-black hologram-text mb-4 tracking-tighter leading-none">
+                        AD<span class="text-transparent bg-clip-text bg-gradient-to-r from-brand-green to-emerald-600">FUELS</span>
+                    </h1>
+                </div>
+
+                <div class="layer-mid mt-6">
+                    <p class="text-xl text-gray-400 font-light max-w-2xl mx-auto">
+                        Quality Services, <span class="text-white font-semibold">Wherever You Go</span>.
+                    </p>
+                </div>
+
+                <div class="layer-pop mt-12 flex justify-center gap-6">
+                    <a href="#stores" class="group relative px-8 py-4 bg-brand-green text-black font-bold text-lg rounded-none skew-x-[-10deg] hover:bg-white transition-colors duration-300">
+                        <span class="inline-block skew-x-[10deg]">FIND STATION</span>
+                        <div class="absolute inset-0 bg-white opacity-0 group-hover:opacity-20 transition-opacity"></div>
+                    </a>
+                    <a href="#services" class="group relative px-8 py-4 border border-brand-green text-brand-green font-bold text-lg rounded-none skew-x-[-10deg] hover:shadow-[0_0_20px_rgba(0,250,94,0.3)] transition-all">
+                        <span class="inline-block skew-x-[10deg]">SERVICES</span>
+                    </a>
+                </div>
+
+            </div>
+        </section>
+
+        <div class="container mx-auto px-4 mb-32">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 border-y border-gray-800 py-8 text-center font-mono text-sm text-gray-400">
+                <div class="hover:text-brand-green transition cursor-default">
+                    <span class="block text-3xl text-white font-display font-bold">20+</span> LOCATIONS
+                </div>
+                <div class="hover:text-brand-green transition cursor-default">
+                    <span class="block text-3xl text-white font-display font-bold">2</span> FRANCHISES
+                </div>
+                <div class="hover:text-brand-green transition cursor-default">
+                    <span class="block text-3xl text-white font-display font-bold">24/7</span> SERVICE
+                </div>
+                <div class="hover:text-brand-green transition cursor-default">
+                    <span class="block text-3xl text-white font-display font-bold">100%</span> RELIABLE
+                </div>
+            </div>
+        </div>
+
+        <section id="about" class="container mx-auto px-6 mb-40">
+            <div class="flex flex-col md:flex-row gap-10 items-center">
+                <div class="md:w-1/2">
+                    <h2 class="text-5xl font-display font-bold mb-6">THE JOURNEY</h2>
+                    <p class="text-gray-400 text-lg leading-relaxed mb-6 border-l-2 border-brand-green pl-6">
+                        Adfuels began its journey in 2009 with just two stores in Ireland. Today, we are a nationwide network fueled by trust.
+                    </p>
+                    <div class="space-y-4">
+                        <div class="p-4 bg-white/5 border border-white/10 rounded hover:border-brand-green transition">
+                            <h4 class="font-bold text-brand-green">MISSION</h4>
+                            <p class="text-sm text-gray-400">To deliver reliable fuel & quality food with unmatched convenience.</p>
+                        </div>
+                        <div class="p-4 bg-white/5 border border-white/10 rounded hover:border-blue-500 transition">
+                            <h4 class="font-bold text-blue-500">VISION</h4>
+                            <p class="text-sm text-gray-400">To become Ireland’s most trusted fuel retailer.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="md:w-1/2 h-[400px] relative perspective-container flex items-center justify-center">
+                    <div class="absolute inset-0 bg-gradient-to-r from-transparent via-brand-green/10 to-transparent blur-3xl"></div>
+                    <div class="card-3d w-64 h-80 absolute left-0 z-10 bg-black flex flex-col justify-center items-center text-center p-6 border-brand-green">
+                        <h3 class="text-6xl font-display text-transparent bg-clip-text bg-gradient-to-b from-gray-500 to-gray-800">2009</h3>
+                        <p class="text-gray-500 mt-2">The Beginning</p>
+                    </div>
+                    <div class="card-3d w-64 h-80 absolute left-10 top-[-20px] z-20 bg-gray-900 flex flex-col justify-center items-center text-center p-6 border-brand-green" style="transform: translateZ(50px);">
+                        <h3 class="text-6xl font-display text-brand-green">2024</h3>
+                        <p class="text-white mt-2">The Expansion</p>
+                        <div class="mt-4 px-3 py-1 bg-brand-green text-black font-bold text-xs rounded">NOW LOADING...</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="services" class="container mx-auto px-6 mb-40">
+            <h2 class="text-center text-5xl font-display font-bold mb-16 text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-600">
+                CORE MODULES
+            </h2>
+
+            <div class="grid md:grid-cols-3 gap-8 perspective-container">
+                <div class="card-3d rounded-2xl p-8 h-96 flex flex-col relative overflow-hidden group">
+                    <div class="absolute top-0 right-0 w-full h-full bg-gradient-to-br from-brand-green/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <div class="layer-pop mb-auto">
+                        <i class="fas fa-gas-pump text-5xl text-brand-green drop-shadow-[0_0_15px_rgba(0,250,94,0.5)]"></i>
+                    </div>
+                    <div class="layer-mid z-10">
+                        <h3 class="text-2xl font-bold mb-2">FUEL SYSTEMS</h3>
+                        <p class="text-gray-400 text-sm mb-4">Powered by Applegreen & Top Oil.</p>
+                        <ul class="text-xs text-gray-500 space-y-2 font-mono">
+                            <li>> UNLEADED</li>
+                            <li>> DIESEL</li>
+                            <li>> HIGH PERFORMANCE</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="card-3d rounded-2xl p-8 h-96 flex flex-col relative overflow-hidden group border-orange-500/30 hover:border-orange-500">
+                    <div class="layer-pop mb-auto">
+                        <i class="fas fa-shopping-basket text-5xl text-orange-500 drop-shadow-[0_0_15px_rgba(249,115,22,0.5)]"></i>
+                    </div>
+                    <div class="layer-mid z-10">
+                        <h3 class="text-2xl font-bold mb-2">CONVENIENCE</h3>
+                        <p class="text-gray-400 text-sm mb-4">Everyday essentials at your fingertips.</p>
+                        <div class="w-full h-1 bg-gray-800 rounded overflow-hidden">
+                            <div class="h-full bg-orange-500 w-[80%]"></div>
+                        </div>
+                        <p class="text-xs text-orange-500 mt-2 text-right">STOCK: 98%</p>
+                    </div>
+                </div>
+
+                <div class="card-3d rounded-2xl p-8 h-96 flex flex-col relative overflow-hidden group border-yellow-500/30 hover:border-yellow-500">
+                    <div class="layer-pop mb-auto">
+                        <i class="fas fa-mug-hot text-5xl text-yellow-500 drop-shadow-[0_0_15px_rgba(234,179,8,0.5)]"></i>
+                    </div>
+                    <div class="layer-mid z-10">
+                        <h3 class="text-2xl font-bold mb-2">HOT DELI</h3>
+                        <p class="text-gray-400 text-sm mb-4">Freshly prepared meals & coffee.</p>
+                        <button class="w-full py-2 border border-yellow-500/50 text-yellow-500 text-xs font-bold hover:bg-yellow-500 hover:text-black transition">VIEW MENU</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="stores" class="container mx-auto px-6 mb-40">
+            <div class="flex justify-between items-end mb-10 border-b border-gray-800 pb-4">
+                <div>
+                    <h2 class="text-4xl font-display font-bold">NETWORK STATUS</h2>
+                    <p class="text-brand-green font-mono text-sm mt-1">> SYSTEM ONLINE: 19 NODES ACTIVE</p>
+                </div>
+                
+                <div class="flex gap-2">
+                    <button onclick="filterStores('all')" class="px-4 py-1 text-xs font-mono border border-brand-green bg-brand-green/20 text-brand-green hover:bg-brand-green hover:text-black transition">ALL</button>
+                    <button onclick="filterStores('Daybreak')" class="px-4 py-1 text-xs font-mono border border-gray-700 hover:border-orange-500 hover:text-orange-500 transition">DAYBREAK</button>
+                    <button onclick="filterStores('Londis')" class="px-4 py-1 text-xs font-mono border border-gray-700 hover:border-blue-500 hover:text-blue-500 transition">LONDIS</button>
+                </div>
+            </div>
+
+            <div class="mb-8">
+                <input type="text" id="storeSearch" placeholder="SEARCH COORDINATES..." class="w-full bg-black/50 border border-gray-700 text-white px-6 py-4 font-mono focus:border-brand-green focus:outline-none focus:shadow-[0_0_30px_rgba(0,250,94,0.1)] transition-all">
+            </div>
+
+            <div id="store-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 perspective-container">
+                </div>
+        </section>
+
+        <footer id="contact" class="border-t border-gray-800 bg-black pt-20 pb-40">
+            <div class="container mx-auto px-6 grid md:grid-cols-2 gap-20">
+                <div>
+                    <h2 class="text-3xl font-display font-bold mb-6">INITIALIZE CONTACT</h2>
+                    <div class="space-y-4 font-mono text-sm">
+                        <div class="flex items-center gap-4 p-4 border border-gray-800 hover:border-brand-green transition group cursor-pointer">
+                            <i class="fas fa-envelope text-brand-green"></i>
+                            <span class="text-gray-400 group-hover:text-white">info@adfuels.ie</span>
+                        </div>
+                        <div class="flex items-center gap-4 p-4 border border-gray-800 hover:border-brand-green transition group cursor-pointer">
+                            <i class="fas fa-building text-brand-green"></i>
+                            <span class="text-gray-400 group-hover:text-white">office@adfuels.ie</span>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <form class="space-y-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            <input type="text" placeholder="NAME" class="bg-gray-900 border border-gray-800 p-3 text-white focus:border-brand-green outline-none">
+                            <input type="email" placeholder="EMAIL" class="bg-gray-900 border border-gray-800 p-3 text-white focus:border-brand-green outline-none">
+                        </div>
+                        <textarea rows="4" placeholder="TRANSMISSION CONTENT" class="w-full bg-gray-900 border border-gray-800 p-3 text-white focus:border-brand-green outline-none"></textarea>
+                        <button type="button" class="px-8 py-3 bg-brand-green text-black font-bold font-display hover:shadow-[0_0_30px_rgba(0,250,94,0.6)] transition-shadow">SEND DATA</button>
+                    </form>
+                </div>
+            </div>
+        </footer>
+
+    </main>
+
+    <script>
+        // --- 1. 3D TILT ENGINE ---
+        const heroSection = document.getElementById('home');
+        const heroTilt = document.getElementById('hero-tilt');
+        const cards = document.querySelectorAll('.card-3d');
+
+        // Hero Parallax
+        heroSection.addEventListener('mousemove', (e) => {
+            const x = (window.innerWidth / 2 - e.clientX) / 25; // Division controls sensitivity
+            const y = (window.innerHeight / 2 - e.clientY) / 25;
+            
+            heroTilt.style.transform = `rotateY(${x}deg) rotateX(${y}deg)`;
+        });
+
+        heroSection.addEventListener('mouseleave', () => {
+            heroTilt.style.transform = `rotateY(0deg) rotateX(0deg)`;
+        });
+
+        // Cards individual tilt
+        cards.forEach(card => {
+            card.addEventListener('mousemove', (e) => {
+                const rect = card.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                const xCenter = rect.width / 2;
+                const yCenter = rect.height / 2;
+                
+                const rotateX = ((y - yCenter) / yCenter) * -10; // Max 10deg rotation
+                const rotateY = ((x - xCenter) / xCenter) * 10;
+
+                card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`;
+            });
+
+            card.addEventListener('mouseleave', () => {
+                card.style.transform = `perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)`;
+            });
+        });
+
+        // --- 2. STORE DATA GENERATOR ---
+        const storeData = [
+            { name: "Banagher", brand: "Daybreak" }, { name: "Ballycullane", brand: "Daybreak" },
+            { name: "Drumgoold", brand: "Daybreak" }, { name: "Rathangan", brand: "Londis" },
+            { name: "Athenry", brand: "Daybreak" }, { name: "Mucklagh", brand: "Daybreak" },
+            { name: "Ennis", brand: "Daybreak" }, { name: "Pollard", brand: "Daybreak" },
+            { name: "Borris in Ossory", brand: "Daybreak" }, { name: "Collon", brand: "Londis" },
+            { name: "Dundalk", brand: "Daybreak" }, { name: "Kildare Town", brand: "Londis" },
+            { name: "Dromcollogher", brand: "Daybreak" }, { name: "Kingscourt", brand: "Daybreak" },
+            { name: "Nobber", brand: "Daybreak" }, { name: "Navan", brand: "Daybreak" },
+            { name: "Ballinrobe", brand: "Londis" }, { name: "Claremorris", brand: "Daybreak" },
+            { name: "Clonboo", brand: "Daybreak" }
+        ];
+
+        const gridContainer = document.getElementById('store-grid');
+        const searchInput = document.getElementById('storeSearch');
+
+        function renderStores(filter = 'all', searchTerm = '') {
+            gridContainer.innerHTML = '';
+            
+            const filtered = storeData.filter(store => {
+                const matchesBrand = filter === 'all' || store.brand === filter;
+                const matchesSearch = store.name.toLowerCase().includes(searchTerm.toLowerCase());
+                return matchesBrand && matchesSearch;
+            });
+
+            filtered.forEach((store, index) => {
+                const isLondis = store.brand === 'Londis';
+                const borderColor = isLondis ? 'border-blue-500' : 'border-orange-500';
+                const textColor = isLondis ? 'text-blue-500' : 'text-orange-500';
+                
+                const card = document.createElement('div');
+                card.className = `bg-gray-900/80 border-l-4 ${borderColor} p-6 relative overflow-hidden group hover:bg-gray-800 transition`;
+                
+                // Add tech pattern
+                card.innerHTML = `
+                    <div class="absolute top-2 right-2 text-[10px] text-gray-600 font-mono">ID: 0${index + 1}</div>
+                    <h4 class="text-sm font-mono text-gray-400 mb-1">SECTOR: ${store.brand.toUpperCase()}</h4>
+                    <h3 class="text-xl font-bold text-white group-hover:text-brand-green transition">${store.name}</h3>
+                    
+                    <div class="mt-4 flex items-center justify-between">
+                        <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse shadow-[0_0_10px_#00ff00]"></span>
+                        <button class="text-xs border border-gray-600 px-2 py-1 text-gray-400 hover:border-white hover:text-white transition">LOCATE</button>
+                    </div>
+                `;
+                gridContainer.appendChild(card);
+            });
+        }
+
+        function filterStores(brand) {
+            renderStores(brand, searchInput.value);
+        }
+
+        searchInput.addEventListener('input', (e) => {
+            renderStores('all', e.target.value);
+        });
+
+        // Initialize
+        renderStores();
+
+        // --- 3. SCROLL REVEAL (GSAP) ---
+        gsap.utils.toArray('section').forEach(section => {
+            gsap.from(section.children, {
+                y: 50,
+                opacity: 0,
+                duration: 1,
+                stagger: 0.2,
+                scrollTrigger: {
+                    trigger: section,
+                    start: "top 80%",
+                }
+            });
+        });
+
+    </script>
+</body>
+</html>
